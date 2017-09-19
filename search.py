@@ -67,14 +67,18 @@ def tinyMazeSearch(problem):
   w = Directions.WEST
   return  [s,s,w,s,w,w,s,w]
 
-def graph_search(problem, keeper):
+def graph_search(problem, keeper, heuristic = None):
     """
     Universal function to implement DFS and BFS
     keeper - is an Queue or Stack object
     """
     
     visited_nodes = set()
-    keeper.push((problem.getStartState(), []))
+    element_tuple = (problem.getStartState(), [])
+    if isinstance(keeper, util.Stack) or isinstance(keeper, util.Queue):
+        keeper.push(element_tuple)
+    else:
+        keeper.push(element_tuple, heuristic(element_tuple[0], problem))
     while not keeper.isEmpty():
         (node, path) = keeper.pop()
         if problem.isGoalState(node):
@@ -82,7 +86,13 @@ def graph_search(problem, keeper):
         visited_nodes.add(node)
         for state, action, cost in problem.getSuccessors(node):
             if not state in visited_nodes:
-                keeper.push((state, path + [action]))
+                push_tuple = (state, path + [action])
+                if isinstance(keeper, util.Stack) or isinstance(keeper, util.Queue):
+                    keeper.push(push_tuple)
+                else:
+                    #print 'Path, action:', path, action
+                    new_cost = problem.getCostOfActions(path + [action]) + heuristic(state, problem)
+                    keeper.push(push_tuple, new_cost)
     return []
 
 def depthFirstSearch(problem):
@@ -116,7 +126,7 @@ def breadthFirstSearch(problem):
 def uniformCostSearch(problem):
   "Search the node of least total cost first. "
   "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+  return graph_search(problem, util.PriorityQueue(), nullHeuristic)
 
 def nullHeuristic(state, problem=None):
   """
@@ -128,7 +138,7 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
   "Search the node that has the lowest combined cost and heuristic first."
   "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+  return graph_search(problem, util.PriorityQueue(), heuristic)
     
   
 # Abbreviations
