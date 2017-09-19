@@ -281,12 +281,12 @@ class CornersProblem(search.SearchProblem):
   def getStartState(self):
     "Returns the start state (in your state space, not the full Pacman state space)"
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return self.startingPosition, self.corners
     
   def isGoalState(self, state):
     "Returns whether this search state is a goal state of the problem"
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return len(state[1]) == 0
        
   def getSuccessors(self, state):
     """
@@ -310,7 +310,15 @@ class CornersProblem(search.SearchProblem):
       #   hitsWall = self.walls[nextx][nexty]
       
       "*** YOUR CODE HERE ***"
-      
+      x, y = state[0]
+      not_visited = list(state[1])
+      dx, dy = Actions.directionToVector(action)
+      nextx, nexty = int(x + dx), int(y + dy)
+      if not self.walls[nextx][nexty]:
+          if (nextx, nexty) in self.corners and (nextx, nexty) in not_visited:
+              not_visited.remove((nextx, nexty))
+          nextState = ((nextx, nexty), tuple(not_visited))
+          successors.append((nextState, action, 1))
     self._expanded += 1
     return successors
 
@@ -345,8 +353,38 @@ def cornersHeuristic(state, problem):
   walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
   
   "*** YOUR CODE HERE ***"
-  return 0 # Default to trivial solution
+  #print problem._expanded
+  heuristics = 0
+  corners_left = list(state[1])
+  current_point = state[0]
+  while len(corners_left) > 0:
+      closest_corner = closest_point(current_point, corners_left)
+      heuristics += euclidiean_distance(current_point, closest_corner)
+      current_point = closest_corner
+      corners_left.remove(closest_corner)
+  return heuristics
 
+def closest_point(current_point, goals_list):
+    """
+    Returns a point from goals_list that is closest to current_point
+    """
+    if len(goals_list) == 0:
+        return None
+    closest_corner = goals_list[0]
+    closest_distance = euclidiean_distance(current_point, closest_corner)
+    for corner in goals_list[1:]:
+        current_distance = euclidiean_distance(current_point, corner)
+        if closest_distance > current_distance:
+            closest_distance = current_distance
+            closest_corner = corner
+    return closest_corner
+
+def euclidiean_distance(x1, x2):
+    """
+    Euclidiean distance between x1 and x2
+    """
+    return abs(x1[0] - x2[0]) + abs(x1[1] - x2[1])
+    
 class AStarCornersAgent(SearchAgent):
   "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
   def __init__(self):
@@ -436,7 +474,12 @@ def foodHeuristic(state, problem):
   """
   position, foodGrid = state
   "*** YOUR CODE HERE ***"
-  return 0
+  food_list = foodGrid.asList()
+  if not food_list:
+      return 0
+  
+  closest_food = closest_point(position, food_list)
+  return euclidiean_distance(position, closest_food) + len(food_list)^2
   
 class ClosestDotSearchAgent(SearchAgent):
   "Search for all food using a sequence of searches"
